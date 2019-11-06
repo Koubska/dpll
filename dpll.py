@@ -1,7 +1,6 @@
 import sys
-from copy import deepcopy
-from math import copysign as sign
 from time import time
+from copy import copy as cp
 
 
 class dpll : 
@@ -84,7 +83,7 @@ class dpll :
 		start = time()
 		for clause in clauses : # check for unit and unsatisfiable clauses : 
 			satisfiable = False 
-			copy = deepcopy(clause)
+			copy = cp(clause)
 			for (name, value, fixed) in self.trail : #Iterate over given assignments
 				if not fixed : 
 					pass #not fixed variables not usefull for Propagation
@@ -92,6 +91,7 @@ class dpll :
 					if (-1 * name) in clause : 
 						satisfiable = True 
 						copy.remove(-1 * name)
+						pass
 					elif name in clause : 
 						copy.remove(name) 
 				elif value == 1 : #current variable is assigned to true 
@@ -101,6 +101,7 @@ class dpll :
 					if name in clause : 
 						satisfiable = True 
 						copy.remove(name)
+						pass
 			if len(copy) == 0 and satisfiable == False :
 				self.timeBCP += time() - start
 				return False
@@ -124,7 +125,7 @@ class dpll :
 		self.amountDecide += 1  
 		start = time()
 		#check if all variables are assigned
-		unknownVars = deepcopy(list(self.setVars))
+		unknownVars = cp(list(self.setVars))
 		for assignment in self.trail : 
 			(x,v, f) = assignment 
 			if x in unknownVars : 
