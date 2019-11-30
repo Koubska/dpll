@@ -107,7 +107,7 @@ class dpll :
 		#check if all variables are assigned
 		unknownVars = cp(list(self.setVars))
 		for assignment in self.trail : 
-			(x,v, f) = assignment 
+			(x,y, z) = assignment 
 			if x in unknownVars : 
 				unknownVars.remove(x)
 			if len(unknownVars) == 0 : #there are no unassigned Variables 
