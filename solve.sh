@@ -2,4 +2,4 @@
 
 ##### Python
 echo "Python"
-pypy3 dpll.py $*
+python3 dpll.py $*
