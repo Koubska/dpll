@@ -53,6 +53,7 @@ class dpll :
 #			if (!backtrack()) then return UNSAT;
 #}
 	def dpll(self, clauses) : 
+		self.trail.clear()
 		if not self.BCP(clauses) : 
 			print("unsat")
 			sys.exit(20)
