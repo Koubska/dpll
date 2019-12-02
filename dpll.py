@@ -8,7 +8,7 @@ class dpll :
 		self.trail = list() # Global Stack of assignments
 		self.numVars = 0 # Global amount of Variables
 		self.numClauses = 0 # Global amount of Clauses
-		self.setVars = set()
+		self.heuristic = dict() #{name :  (total, diff)}
 
 	def solve(self, file) :
 		self.trail.clear()
@@ -24,15 +24,23 @@ class dpll :
 				if line[0] == 'p' : #get numVars and numClauses 
 					temp = line.split(" ")
 					tempint = [int(x) for x in temp[2:]]
-					self.numVars = tempint[0]
+					#self.numVars = tempint[0]
 					self.numClauses = tempint[1]
 					continue
 				literals = list(map(int, line.split()))
 				assert literals[-1] == 0
 				literals = literals[:-1]
 				for lit in literals : 
-					self.setVars.add(abs(lit))
+					var_name = abs(lit)
+					(total, diff) = self.heuristic.get(var_name, (0,0))
+					if lit > 0 : #positive lit
+						self.heuristic.update({var_name : (total+1, diff+1)})
+					else : #negative lit
+						self.heuristic.update({var_name : (total+1, diff-1)})
 				clauses.append(literals)
+			self.numVars = len(self.heuristic)
+			#sort dict by amount of variable occurence and make it a list for better iteration 
+			self.heuristic = [(k, self.heuristic[k]) for k in sorted(self.heuristic, key=self.heuristic.get, reverse=True)]
 		return clauses
 
 
@@ -45,6 +53,7 @@ class dpll :
 #			if (!backtrack()) then return UNSAT;
 #}
 	def dpll(self, clauses) : 
+		self.trail.clear()
 		if not self.BCP(clauses) : 
 			print("unsat")
 			sys.exit(20)
@@ -90,9 +99,12 @@ class dpll :
 				return False
 			elif len(copy) == 1 and satisfiable == False : #Found unit Clause
 				if copy[0] < 0 : 
-					self.trail.append((abs(copy[0]), 0, True))
+					self.trail.append((abs(copy[0]), 0, True)) 
+					#self.heuristic.pop(abs(copy[0]), None)
 				else : 
-					self.trail.append((abs(copy[0]), 1, True))
+					self.trail.append((abs(copy[0]), 1, True)) 
+					#self.heuristic.pop(abs(copy[0]), None)
+				
 		return True
 
 
@@ -103,17 +115,36 @@ class dpll :
 	#choose value v ∈ {0, 1};
 	#trail.push(x , v , false);
 	#return true
+
+#	def decide(self, clauses) : 
+#		#check if all variables are assigned
+#		unknownVars = cp(list(self.setVars))
+#		for assignment in self.trail : 
+#			(x,v, f) = assignment 
+#			if x in unknownVars : 
+#				unknownVars.remove(x)
+#			if len(unknownVars) == 0 : #there are no unassigned Variables 
+#				return False
+#		self.trail.append((unknownVars[0], 0, False))
+#		return True
+
 	def decide(self, clauses) : 
-		#check if all variables are assigned
-		unknownVars = cp(list(self.setVars))
-		for assignment in self.trail : 
-			(x,y, z) = assignment 
-			if x in unknownVars : 
-				unknownVars.remove(x)
-			if len(unknownVars) == 0 : #there are no unassigned Variables 
-				return False
-		self.trail.append((unknownVars[0], 0, False))
-		return True
+		if len(self.trail) == self.numVars : 
+			return False
+		else : #choose unused variable with most occurences
+			#iterate over heuristic list 
+			trail_names = [t[0] for t in self.trail]
+			for (name, (_, diff)) in self.heuristic : 
+				if name in trail_names: 
+					pass
+				else : 
+					if diff > 0 :  #more positive occurences
+						self.trail.append((name, 1, False))
+					else : #more negative occurences
+						self.trail.append((name, 0, False))
+					return True
+		return False #Shouldnt get here
+
 
 	#bool backtrack() 
 	#while (true)
