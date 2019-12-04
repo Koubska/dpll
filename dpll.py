@@ -1,5 +1,6 @@
 import sys
 from copy import copy as cp
+from time import time
 
 
 class dpll : 
@@ -7,25 +8,32 @@ class dpll :
 	def __init__(self):
 		self.trail = list() # Global Stack of assignments
 		self.numVars = 0 # Global amount of Variables
-		self.numClauses = 0 # Global amount of Clauses
 		self.heuristic = dict() #{name :  (total, diff)}
+		self.watchlist = dict() #{name : clauses}
+		self.clauses = []
+		self.timeParse = 0
+		self.timeBacktrack = 0
+		self.timeDecide = 0
+		self.timeBCP = 0
+
 
 	def solve(self, file) :
 		self.trail.clear()
-		clauses = self.parse_dimacs(file)
-		self.dpll(clauses)
+		self.parse_dimacs(file)
+		self.dpll()
+		#print("Time Parse : " + str(self.timeParse))
+		#print("Time BCP : " + str(self.timeBCP))
+		#print("Time Backtrack : " + str(self.timeBacktrack))
+		#print("Time Decide : "  + str(self.timeDecide))
 
 	def parse_dimacs(self, file):
-		clauses = []
+		start = time()
+		self.clauses = []
 		with open(file, 'r') as input_file:
 			for line in input_file:
 				if line[0] == 'c':
 					continue
-				if line[0] == 'p' : #get numVars and numClauses 
-					temp = line.split(" ")
-					tempint = [int(x) for x in temp[2:]]
-					#self.numVars = tempint[0]
-					self.numClauses = tempint[1]
+				if line[0] == 'p' :
 					continue
 				literals = list(map(int, line.split()))
 				assert literals[-1] == 0
@@ -37,11 +45,11 @@ class dpll :
 						self.heuristic.update({var_name : (total+1, diff+1)})
 					else : #negative lit
 						self.heuristic.update({var_name : (total+1, diff-1)})
-				clauses.append(literals)
+				self.clauses.append(literals)
 			self.numVars = len(self.heuristic)
 			#sort dict by amount of variable occurence and make it a list for better iteration 
 			self.heuristic = [(k, self.heuristic[k]) for k in sorted(self.heuristic, key=self.heuristic.get, reverse=True)]
-		return clauses
+		self.timeParse += time() - start
 
 
 #bool DPLL(CNF_Formula φ)
@@ -52,19 +60,22 @@ class dpll :
 #		while (!BCP())
 #			if (!backtrack()) then return UNSAT;
 #}
-	def dpll(self, clauses) : 
+	def dpll(self) : 
 		self.trail.clear()
-		if not self.BCP(clauses) : 
+		#self.initWatchlist()
+		if not self.BCP() : 
 			print("unsat")
 			sys.exit(20)
 		while True : 
-			if not self.decide(clauses) :
+			if not self.decide() :
 				print("sat")
 				sys.exit(10)
-			while not self.BCP(clauses) : 
-				if not self.backtrack(clauses) : 
+			while not self.BCP() : 
+				if not self.backtrack() : 
 					print("unsat")
 					sys.exit(20)
+
+
 
 	#bool BCP() { //more advanced implementation: return false as soon as an unsatisfied clause is detected
 	#	while (there is a unit clause implying that a variable x must be set to a value v )
@@ -73,8 +84,9 @@ class dpll :
 	#	return true;
 	#}
 
-	def BCP(self, clauses) :
-		for clause in clauses : # check for unit and unsatisfiable clauses : 
+	def BCP(self) :
+		start = time()
+		for clause in self.clauses : # check for unit and unsatisfiable clauses : 
 			satisfiable = False 
 			copy = cp(clause)
 			for (name, value, fixed) in reversed(self.trail) : #Iterate over given assignments
@@ -96,6 +108,7 @@ class dpll :
 						copy.remove(name)
 						pass
 			if len(copy) == 0 and satisfiable == False :
+				self.timeBCP += time() - start
 				return False
 			elif len(copy) == 1 and satisfiable == False : #Found unit Clause
 				if copy[0] < 0 : 
@@ -104,7 +117,7 @@ class dpll :
 				else : 
 					self.trail.append((abs(copy[0]), 1, True)) 
 					#self.heuristic.pop(abs(copy[0]), None)
-				
+		self.timeBCP += time() - start
 		return True
 
 
@@ -128,8 +141,10 @@ class dpll :
 #		self.trail.append((unknownVars[0], 0, False))
 #		return True
 
-	def decide(self, clauses) : 
+	def decide(self) : 
+		start = time()
 		if len(self.trail) == self.numVars : 
+			self.timeDecide += time() - start
 			return False
 		else : #choose unused variable with most occurences
 			#iterate over heuristic list 
@@ -142,7 +157,9 @@ class dpll :
 						self.trail.append((name, 1, False))
 					else : #more negative occurences
 						self.trail.append((name, 0, False))
+					self.timeDecide += time() - start
 					return True
+		self.timeDecide += time() - start
 		return False #Shouldnt get here
 
 
@@ -155,14 +172,17 @@ class dpll :
 	#		if (!b) 
 	#			trail.push(x , ¬v , true)
 	#			return true
-	def backtrack(self, clauses) :
+	def backtrack(self) :
+		start = time()
 		while True : 
 			if len(self.trail) == 0 : 
+				self.timeBacktrack += time() - start
 				return False 
 			else : 
 				(x,v,b) = self.trail.pop() #backtrack until the last unfixed variable 
 				if b == False : 
 					self.trail.append((x,int(1-v),True))
+					self.timeBacktrack += time() - start
 					return True
 
 
