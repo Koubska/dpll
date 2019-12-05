@@ -8,7 +8,7 @@ class dpll :
 	def __init__(self):
 		self.trail = list() # Global Stack of assignments
 		self.numVars = 0 # Global amount of Variables
-		self.heuristic = dict() #{name :  (total, diff)}
+		self.heuristic = dict() #{name :  (total, diff)} 123
 		self.watchlist = dict() #{name : clauses}
 		self.clauses = []
 		self.timeParse = 0
