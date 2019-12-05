@@ -21,10 +21,10 @@ class dpll :
 		self.trail.clear()
 		self.parse_dimacs(file)
 		self.dpll()
-		#print("Time Parse : " + str(self.timeParse))
-		#print("Time BCP : " + str(self.timeBCP))
-		#print("Time Backtrack : " + str(self.timeBacktrack))
-		#print("Time Decide : "  + str(self.timeDecide))
+		print("Time Parse : " + str(self.timeParse))
+		print("Time BCP : " + str(self.timeBCP))
+		print("Time Backtrack : " + str(self.timeBacktrack))
+		print("Time Decide : "  + str(self.timeDecide))
 
 	def parse_dimacs(self, file):
 		start = time()
