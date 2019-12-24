@@ -22,9 +22,9 @@ class dpll :
 	def solve(self, file) :
 		self.trail.clear()
 		self.parse_dimacs(file)
-		print(self.clauses)
+		#print(self.clauses)
 		self.dpll()
-		print(self.trail)
+		#print(self.trail)
 		print("Time Parse : " + str(self.timeParse))
 		print("Time BCP : " + str(self.timeBCP))
 		print("Time Backtrack : " + str(self.timeBacktrack))
@@ -103,7 +103,7 @@ class dpll :
 				self.watchlist[clause[0]] = temp0
 				self.watchlist[clause[1]] = temp1
 				self.clauseWatching[i] = [clause[0], clause[1]]
-		print("Init watchlist" + str(self.watchlist))		
+		#print("Init watchlist" + str(self.watchlist))		
 				
 				
 
@@ -159,24 +159,25 @@ class dpll :
 				if len(clause) == 1 : 
 					print("Found Unit" + str(clause)) 
 					lit = clause[0]
-					if lit > 0 : #positve lit -> assign true
+					if lit > 0 : #positve lit -> assign true 1
 						self.trail.append((abs(lit), 1, True))
-					else : 
+					else : #negative lit -> assign false 0
 						self.trail.append((abs(lit), 0 , True))
 					clausesToCheck += (self.watchlist[-1*lit], lit)	 
 		else : 
 			#we only need to check the last made assignment
 			(name, val, fixed) = self.trail[-1]
-			if val == 1 : 	
+			if val == 1 : #postitive assignment, check clauses with negative occurence
 				clausesToCheck += [(cur, -name) for cur in self.watchlist[-name]]
-			else : 
+			else : #negative assignment, check clauses with positive occurence
 				clausesToCheck += [(cur, name) for cur in self.watchlist[name]]
 		
 		print("Clauses to check : " + str(clausesToCheck))
-		while clausesToCheck : 
+		print("Current trail : " + str(self.trail))
+		while len(clausesToCheck) > 0  : 
 			(clauseNumber, literalWhy) = clausesToCheck.pop()
 			clause = self.clauses[clauseNumber]
-			print("Checking : " + str((clauseNumber, literalWhy)) + "   " + str(clause))
+			print("Checking LiteralWhy: " + str(literalWhy) + "   Clause : " + str(clause))
 			otherWatchedLiteralList = self.clauseWatching[clauseNumber]
 			otherWatchedLiteralList.remove(literalWhy)
 			otherWatchedLiteral = otherWatchedLiteralList[0]
@@ -190,10 +191,14 @@ class dpll :
 					elif otherWatchedLiteral > 0 and value == 0 : 
 						#No Conflict do nothing 
 						pass 
+			print("Case 1 did not fit")
 			#If other unwatched Literal is not false, change the watched literal CASE 2 
-			for clauseLit in clause : 
-				for (name, value, fixed) in self.trail : 
-					pass
+			for (name, value, fixed) in self.trail : 
+				for lit in clause : 
+					if name  = abs(lit) : 
+						if (value == 0 and lit < 0) or (value == 1 and lit > 0 )  :
+							#found true unwatched literal -> update the watchlist
+											
 			
 				#No assignment found, make current clause lit to watched literal
 				temp1 = self.watchlist.pop(clauseLit, [])
