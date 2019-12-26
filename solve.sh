@@ -3,3 +3,4 @@
 ##### Python
 echo "Python"
 python3 dpll.py $*
+#./minisat $*

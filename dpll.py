@@ -24,7 +24,7 @@ class dpll :
 		self.parse_dimacs(file)
 		#print(self.clauses)
 		self.dpll()
-		#print(self.trail)
+		print(self.trail)
 		print("Time Parse : " + str(self.timeParse))
 		print("Time BCP : " + str(self.timeBCP))
 		print("Time Backtrack : " + str(self.timeBacktrack))
@@ -152,6 +152,7 @@ class dpll :
 	#	return True
 
 	def BCP(self) : 
+		start = time()
 		clausesToCheck = [] #(clauseNumber, LiteralWhy)
 		if len(self.trail) == 0 : 
 			#check for direct unit clauses (clauses of length 1)
@@ -171,48 +172,113 @@ class dpll :
 				clausesToCheck += [(cur, -name) for cur in self.watchlist[-name]]
 			else : #negative assignment, check clauses with positive occurence
 				clausesToCheck += [(cur, name) for cur in self.watchlist[name]]
-		
-		print("Clauses to check : " + str(clausesToCheck))
-		print("Current trail : " + str(self.trail))
+
+		if len(clausesToCheck) == 0 : 
+			print("Nothing to Check")	
+
 		while len(clausesToCheck) > 0  : 
+			print("Clauses to check : " + str(clausesToCheck))
+			print("Current trail : " + str(self.trail))
+			print("Watchlist : " + str(self.watchlist))
+			print("Clauses Watching : " + str(self.clauseWatching))
+			Case1 = False 
+			Case2 = False 
 			(clauseNumber, literalWhy) = clausesToCheck.pop()
 			clause = self.clauses[clauseNumber]
-			print("Checking LiteralWhy: " + str(literalWhy) + "   Clause : " + str(clause))
-			otherWatchedLiteralList = self.clauseWatching[clauseNumber]
+			print("Checking LiteralWhy: " + str(literalWhy) + "   Clause : " + str(clause)+ "  ClauseNumber : " + str(clauseNumber))
+			otherWatchedLiteralList = cp(self.clauseWatching[clauseNumber])
 			otherWatchedLiteralList.remove(literalWhy)
 			otherWatchedLiteral = otherWatchedLiteralList[0]
 			print("Other literal : " + str(otherWatchedLiteral))
 			#if other watched literal is True, do nothing as no conflict CASE 1
 			for (name, value, fixed) in self.trail : 
 				if abs(otherWatchedLiteral) == abs(name) : #other watched literal is assigned
-					if otherWatchedLiteral < 0 and value == 0 : 
+					if (otherWatchedLiteral < 0 and value == 0) or (otherWatchedLiteral > 0 and value == 0) : 
 						#No Conflict do nothing
-						pass 
-					elif otherWatchedLiteral > 0 and value == 0 : 
-						#No Conflict do nothing 
-						pass 
-			print("Case 1 did not fit")
-			#If other unwatched Literal is not false, change the watched literal CASE 2 
-			for (name, value, fixed) in self.trail : 
-				for lit in clause : 
-					if name  = abs(lit) : 
-						if (value == 0 and lit < 0) or (value == 1 and lit > 0 )  :
-							#found true unwatched literal -> update the watchlist
-											
-			
-				#No assignment found, make current clause lit to watched literal
-				temp1 = self.watchlist.pop(clauseLit, [])
-				temp1.append(clauseNumber)
-				self.watchlist[clauseLit] = temp1 
-				#remove old clause from conflicting old watchlist 
-				temp2 = self.watchlist.pop(literalWhy, [])
-				temp2.remove(clauseNumber)
-				self.watchlist[literalWhy] = temp2
-				
+						Case1 = True
+						print("Case 1 !")
+						break
 
+			if not Case1 :  #CASE 2 
+				print("Case 1 did not fit")
+				#If other unwatched Literal is not false, change the watched literal 
+				for lit in clause :
+					found = False
+					if abs(lit) == abs(otherWatchedLiteral) or abs(lit) == abs(literalWhy) : 
+						continue 
 
+					if Case2 : 
+						break
+
+					for (name, value, fixed) in self.trail : 
+						if name == abs(lit) :
+							print("Case 2 with " + str(lit))
+
+							Case2 = True
+							found = True
+							if (value == 1 and lit > 0) or (value == 0 and lit < 0) : 
+								#found true unwatched literal -> update the watchlist
+								self.removeFromWatchlist(literalWhy, clauseNumber)
+								self.removeClauseWatching(literalWhy, clauseNumber)
+								self.appendToWatchlist(lit, clauseNumber)
+								self.appendClauseWatching(lit, clauseNumber)
+							break
+	
+					if not found : 
+						#current lit is not assigned -> make it the new watched literal 
+						print("Current lit : " + str(lit) + " is not assigned")
+						Case2 =  True 
+						found = True
+						self.removeFromWatchlist(literalWhy, clauseNumber)
+						self.removeClauseWatching(literalWhy, clauseNumber)
+						self.appendToWatchlist(lit, clauseNumber)
+						self.appendClauseWatching(lit, clauseNumber)
+						break
+						
+			if not (Case1 or Case2) : 
+				print("Case 2 did not fit, so Case 3!")
+				#Look at other watched Literal
+				for (name, value, fixed) in self.trail :	
+					if name == abs(otherWatchedLiteral) : 
+						#Is set Found Confict
+						print("Conflict because of " +str(otherWatchedLiteral))
+						self.timeBCP += time() - start
+						return False 
+				#Not set so Propagate
+				print("Propagate : " + str(otherWatchedLiteral))		
+				if abs(otherWatchedLiteral) in clause : 
+					#Positive occurence in clause 
+					self.trail.append((otherWatchedLiteral, 1, True))
+				else : 
+					self.trail.append((otherWatchedLiteral, 0, True))
+		self.timeBCP += time() - start
 		return True
 
+
+	def appendToWatchlist(self, literal, clauseNumber) : 
+		temp = self.watchlist[literal]
+		temp.append(clauseNumber)
+		self.watchlist[literal] = temp
+		print("Watchlist append, Literal : " + str(literal)+ " ClauseNumber : "+ str(clauseNumber))
+
+	def removeFromWatchlist(self, literal, clauseNumber) :
+		temp = self.watchlist[literal]
+		temp.remove(clauseNumber)
+		self.watchlist[literal] = temp
+		print("Watchlist remove, Literal : " + str(literal)+ " ClauseNumber : "+ str(clauseNumber))
+	
+	def appendClauseWatching(self, literal, clauseNumber) :
+		temp = self.clauseWatching[clauseNumber] 
+		temp.append(literal)
+		self.clauseWatching[clauseNumber] = temp
+		print("ClauseList append, Literal : " + str(literal)+ " ClauseNumber : "+ str(clauseNumber))
+
+	def removeClauseWatching(self, literal, clauseNumber) :
+		temp = self.clauseWatching[clauseNumber] 
+		print(temp)
+		temp.remove(literal)
+		self.clauseWatching[clauseNumber] = temp
+		print("ClauseList remove, Literal : " + str(literal)+ " ClauseNumber : "+ str(clauseNumber))
 
 	#bool decide() {
 	#if (all variables are assigned)
