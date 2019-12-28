@@ -179,14 +179,14 @@ class dpll :
 
 		while len(self.clausesToCheck) > 0  : 
 			#print("Clauses to check : " + str(self.clausesToCheck))
-			#print("Current trail : " + str(self.trail))
+			print("Current trail : " + str(self.trail))
 			#print("Watchlist : " + str(self.watchlist))
 			#print("Clauses Watching : " + str(self.clauseWatching))
 			Case1 = False 
 			Case2 = False 
 			(clauseNumber, literalWhy) = self.clausesToCheck.pop()
 			clause = self.clauses[clauseNumber]
-			#print("Checking LiteralWhy: " + str(literalWhy) + "   Clause : " + str(clause)+ "  ClauseNumber : " + str(clauseNumber))
+			print("Checking LiteralWhy: " + str(literalWhy) + "   Clause : " + str(clause)+ "  ClauseNumber : " + str(clauseNumber) + " isWatching : " + str(self.clauseWatching[clauseNumber]))
 			otherWatchedLiteralList = cp(self.clauseWatching[clauseNumber])
 			otherWatchedLiteralList.remove(literalWhy)
 			otherWatchedLiteral = otherWatchedLiteralList[0]
@@ -226,19 +226,21 @@ class dpll :
 	
 					if not found : 
 						#current lit is not assigned -> make it the new watched literal 
-						#print("Current lit : " + str(lit) + " is not assigned")
+						
 						Case2 =  True 
 						found = True
 						self.removeFromWatchlist(literalWhy, clauseNumber)
 						self.removeClauseWatching(literalWhy, clauseNumber)
 						self.appendToWatchlist(lit, clauseNumber)
 						self.appendClauseWatching(lit, clauseNumber)
+						print("Current lit : " + str(lit) + " is not assigned")
+						print("Clause is now watching : " + str(self.clauseWatching[clauseNumber]))
 						break
 						
 			if not (Case1 or Case2) : 
 				#print("Case 2 did not fit, so Case 3!")
 				#Look at other watched Literal
-				print("Trail : " + str(self.trail) + "  Other watchedLiteral : " + str(otherWatchedLiteral))
+				#print("Trail : " + str(self.trail) + "  Other watchedLiteral : " + str(otherWatchedLiteral))
 				for (name, value, fixed) in self.trail :	
 					if name == abs(otherWatchedLiteral) : 
 						#Is set Found Confict
@@ -247,7 +249,7 @@ class dpll :
 						self.clausesToCheck = []
 						return False 
 				#Not set so Propagate
-				#print("Propagate : " + str(otherWatchedLiteral))		
+				print("Propagate : " + str(otherWatchedLiteral))		
 				if otherWatchedLiteral > 0: 
 					#Positive occurence in clause 
 					self.trail.append((otherWatchedLiteral, 1, True))
@@ -319,6 +321,8 @@ class dpll :
 						self.trail.append((name, 1, False))
 					else : #more negative occurences
 						self.trail.append((name, 0, False))
+					
+					print("Decided : " + str(self.trail[-1]))
 					self.timeDecide += time() - start
 					return True
 		self.timeDecide += time() - start
