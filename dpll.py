@@ -1,6 +1,5 @@
 import sys
 from copy import copy as cp
-from time import time
 
 
 class dpll : 
@@ -14,25 +13,13 @@ class dpll :
 		self.clauses = dict()
 		self.watchlist = dict()
 		self.clauseWatching = dict()
-		self.timeParse = 0
-		self.timeBacktrack = 0
-		self.timeDecide = 0
-		self.timeBCP = 0
-
 
 	def solve(self, file) :
 		self.trail.clear()
 		self.parse_dimacs(file)
-		#print(self.clauses)
 		self.dpll()
-		#print(self.trail)
-		print("Time Parse : " + str(self.timeParse))
-		print("Time BCP : " + str(self.timeBCP))
-		print("Time Backtrack : " + str(self.timeBacktrack))
-		print("Time Decide : "  + str(self.timeDecide))
 
 	def parse_dimacs(self, file):
-		start = time()
 		curClauseNumber = 0
 		with open(file, 'r') as input_file:
 			for line in input_file:
@@ -56,7 +43,6 @@ class dpll :
 			self.numClauses = curClauseNumber+1
 			#sort dict by amount of variable occurence and make it a list for better iteration 
 			self.heuristic = [(k, self.heuristic[k]) for k in sorted(self.heuristic, key=self.heuristic.get, reverse=True)]
-			self.timeParse += time() - start
 
 
 #bool DPLL(CNF_Formula φ)
@@ -67,23 +53,18 @@ class dpll :
 #		while (!BCP())
 #			if (!backtrack()) then return UNSAT;
 #}
+
 	def dpll(self) : 
 		self.trail.clear()
 		self.initWatchlist()
 		if not self.BCP() : 
-			print("unsat")
-			return
-			#sys.exit(20)
+			sys.exit(20)
 		while True : 
 			if not self.decide() :
-				print("sat")
-				return
-				#sys.exit(10)
+				sys.exit(10)
 			while not self.BCP() : 
 				if not self.backtrack() : 
-					print("unsat")
-					return 
-					#sys.exit(20)
+					sys.exit(20)
 
 	def initWatchlist(self) : 
 		#Init dict for +- vars
@@ -95,7 +76,6 @@ class dpll :
 			clause = self.clauses[i]
 			if len(clause) == 1 : 
 				pass
-				#Todo Propagate 
 			else : 
 				temp0 = self.watchlist.pop(clause[0], [])
 				temp0.append(i)
@@ -104,7 +84,6 @@ class dpll :
 				self.watchlist[clause[0]] = temp0
 				self.watchlist[clause[1]] = temp1
 				self.clauseWatching[i] = [clause[0], clause[1]]
-		#print("Init watchlist" + str(self.watchlist))		
 				
 				
 
@@ -116,44 +95,8 @@ class dpll :
 	#	return true;
 	#}
 
-	#def BCP(self) :
-	#	start = time()
-	#	for clause in self.clauses : # check for unit and unsatisfiable clauses : 
-	#		satisfiable = False 
-	#		copy = cp(clause)
-	#		for (name, value, fixed) in reversed(self.trail) : #Iterate over given assignments
-	#			if not fixed : 
-	#				pass #not fixed variables not usefull for Propagation
-	#			if value == 0 : #current variable is assigned to false 
-	#				if (-1 * name) in clause : 
-	#					satisfiable = True 
-	#					copy.remove(-1 * name)
-	#					pass
-	#				elif name in clause : 
-	#					copy.remove(name) 
-	#			elif value == 1 : #current variable is assigned to true 
-	#				if (-1 * name) in clause :
-	#					#print("Copy : " + str(copy) + "  Name : " + str(-1 * name))
-	#					copy.remove(-1 * name)	
-	#				if name in clause : 
-	#					satisfiable = True 
-	#					copy.remove(name)
-	#					pass
-	#		if len(copy) == 0 and satisfiable == False :
-	#			self.timeBCP += time() - start
-	#			return False
-	#		elif len(copy) == 1 and satisfiable == False : #Found unit Clause
-	#			if copy[0] < 0 : 
-	#				self.trail.append((abs(copy[0]), 0, True)) 
-	#				#self.heuristic.pop(abs(copy[0]), None)
-	#			else : 
-	#				self.trail.append((abs(copy[0]), 1, True)) 
-	#				#self.heuristic.pop(abs(copy[0]), None)
-	#	self.timeBCP += time() - start
-	#	return True
-
 	def BCP(self) : 
-		start = time()
+		#start = time()
 		if len(self.trail) == 0 : 
 			#check for direct unit clauses (clauses of length 1)
 			for clause in self.clauses.values() : 
@@ -173,16 +116,7 @@ class dpll :
 			else : #negative assignment, check clauses with positive occurence
 				self.clausesToCheck += [(cur, name) for cur in self.watchlist[name]]
 
-		if len(self.clausesToCheck) == 0 : 
-			#print("Nothing to Check")
-			return True	
-
 		while len(self.clausesToCheck) > 0  : 
-			#print("New iter")
-			#print("Clauses to check : " + str(self.clausesToCheck))
-			#print("Current trail : " + str(self.trail))
-			#print("Watchlist : " + str(self.watchlist))
-			#print("Clauses Watching : " + str(self.clauseWatching))
 			Case1 = False 
 			Case2 = False 
 			(clauseNumber, literalWhy) = self.clausesToCheck.pop()
@@ -195,14 +129,11 @@ class dpll :
 			for (name, value, fixed) in self.trail : 
 				if name == abs(otherWatchedLiteral) : #other watched literal is assigned
 					if (otherWatchedLiteral < 0 and value == 0) or (otherWatchedLiteral > 0 and value == 1) : 
-						#No Conflict do nothing
-						#Current Clause is satisfied
+						#No Conflict do nothing as current Clause is satisfied
 						Case1 = True
-						#print("Case 1 !")
 						break
 
 			if not Case1 :  #CASE 2 
-				#print("Case 1 did not fit")
 				#If other unwatched Literal is not false, change the watched literal 
 				for lit in clause :
 					found = False
@@ -213,7 +144,6 @@ class dpll :
 
 					for (name, value, fixed) in self.trail : 
 						if name == abs(lit) : #found assigned lit in clause
-							#print("Case 2 with " + str(lit))
 							found = True
 							if (value == 1 and lit > 0) or (value == 0 and lit < 0) : #clause is satisfied
 								#found true unwatched literal -> update the watchlist
@@ -237,18 +167,14 @@ class dpll :
 						break
 						
 			if not (Case1 or Case2) : 
-				#print("Case 2 did not fit, so Case 3!")
 				#Look at other watched Literal
-				#print("Trail : " + str(self.trail) + "  Other watchedLiteral : " + str(otherWatchedLiteral))
 				for (name, value, fixed) in self.trail :	
 					if name == abs(otherWatchedLiteral) : 
 						#Is set Found Confict
 						#print("Conflict because of " +str(otherWatchedLiteral))
-						self.timeBCP += time() - start
 						self.clausesToCheck = []
 						return False 
-				#Not set so Propagate
-				#print("Propagate : " + str(otherWatchedLiteral))		
+				#Not set so Propagate	
 				if otherWatchedLiteral > 0: 
 					#Positive occurence in clause 
 					self.trail.append((otherWatchedLiteral, 1, True))
@@ -256,7 +182,6 @@ class dpll :
 				else : 
 					self.trail.append((abs(otherWatchedLiteral), 0, True))
 					self.clausesToCheck += [(cur, abs(otherWatchedLiteral)) for cur in self.watchlist[abs(otherWatchedLiteral)]]
-		self.timeBCP += time() - start
 		return True
 
 
@@ -264,25 +189,22 @@ class dpll :
 		temp = self.watchlist[literal]
 		temp.append(clauseNumber)
 		self.watchlist[literal] = temp
-		#print("Watchlist append, Literal : " + str(literal)+ " ClauseNumber : "+ str(clauseNumber))
-
+	
 	def removeFromWatchlist(self, literal, clauseNumber) :
 		temp = self.watchlist[literal]
 		temp.remove(clauseNumber)
 		self.watchlist[literal] = temp
-		#print("Watchlist remove, Literal : " + str(literal)+ " ClauseNumber : "+ str(clauseNumber))
-	
+
 	def appendClauseWatching(self, literal, clauseNumber) :
 		temp = self.clauseWatching[clauseNumber] 
 		temp.append(literal)
 		self.clauseWatching[clauseNumber] = temp
-		#print("ClauseList append, Literal : " + str(literal)+ " ClauseNumber : "+ str(clauseNumber))
 
 	def removeClauseWatching(self, literal, clauseNumber) :
 		temp = self.clauseWatching[clauseNumber] 
 		temp.remove(literal)
 		self.clauseWatching[clauseNumber] = temp
-		#print("ClauseList remove, Literal : " + str(literal)+ " ClauseNumber : "+ str(clauseNumber))
+
 
 	#bool decide() {
 	#if (all variables are assigned)
@@ -292,6 +214,7 @@ class dpll :
 	#trail.push(x , v , false);
 	#return true
 
+# ------- DECIDE WITHOUT HEURISTICS ----------
 #	def decide(self, clauses) : 
 #		#check if all variables are assigned
 #		unknownVars = cp(list(self.setVars))
@@ -305,9 +228,7 @@ class dpll :
 #		return True
 
 	def decide(self) : 
-		start = time()
-		if len(self.trail) == self.numVars : 
-			self.timeDecide += time() - start
+		if len(self.trail) == self.numVars : #nothing to decide
 			return False
 		else : #choose unused variable with most occurences
 			#iterate over heuristic list 
@@ -320,11 +241,9 @@ class dpll :
 						self.trail.append((name, 1, False))
 					else : #more negative occurences
 						self.trail.append((name, 0, False))
-					
+		
 					#print("Decided : " + str(self.trail[-1]))
-					self.timeDecide += time() - start
 					return True
-		self.timeDecide += time() - start
 		return False #Shouldnt get here
 
 
@@ -338,16 +257,13 @@ class dpll :
 	#			trail.push(x , ¬v , true)
 	#			return true
 	def backtrack(self) :
-		start = time()
 		while True : 
-			if len(self.trail) == 0 : 
-				self.timeBacktrack += time() - start
+			if len(self.trail) == 0 : #Nothing to undo
 				return False 
 			else : 
 				(x,v,b) = self.trail.pop() #backtrack until the last unfixed variable 
 				if b == False : 
-					self.trail.append((x,int(1-v),True))
-					self.timeBacktrack += time() - start
+					self.trail.append((x,int(1-v),True)) #reverse the last decision
 					return True
 
 
