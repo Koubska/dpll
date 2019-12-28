@@ -178,23 +178,25 @@ class dpll :
 			return True	
 
 		while len(self.clausesToCheck) > 0  : 
+			#print("New iter")
 			#print("Clauses to check : " + str(self.clausesToCheck))
-			print("Current trail : " + str(self.trail))
+			#print("Current trail : " + str(self.trail))
 			#print("Watchlist : " + str(self.watchlist))
 			#print("Clauses Watching : " + str(self.clauseWatching))
 			Case1 = False 
 			Case2 = False 
 			(clauseNumber, literalWhy) = self.clausesToCheck.pop()
 			clause = self.clauses[clauseNumber]
-			print("Checking LiteralWhy: " + str(literalWhy) + "   Clause : " + str(clause)+ "  ClauseNumber : " + str(clauseNumber) + " isWatching : " + str(self.clauseWatching[clauseNumber]))
+			#print("Checking LiteralWhy: " + str(literalWhy) + "   Clause : " + str(clause)+ "  ClauseNumber : " + str(clauseNumber) + " isWatching : " + str(self.clauseWatching[clauseNumber]))
 			otherWatchedLiteralList = cp(self.clauseWatching[clauseNumber])
 			otherWatchedLiteralList.remove(literalWhy)
 			otherWatchedLiteral = otherWatchedLiteralList[0]
 			#if other watched literal is True, do nothing as no conflict CASE 1
 			for (name, value, fixed) in self.trail : 
-				if abs(otherWatchedLiteral) == abs(name) : #other watched literal is assigned
-					if (otherWatchedLiteral < 0 and value == 0) or (otherWatchedLiteral > 0 and value == 0) : 
+				if name == abs(otherWatchedLiteral) : #other watched literal is assigned
+					if (otherWatchedLiteral < 0 and value == 0) or (otherWatchedLiteral > 0 and value == 1) : 
 						#No Conflict do nothing
+						#Current Clause is satisfied
 						Case1 = True
 						#print("Case 1 !")
 						break
@@ -204,20 +206,18 @@ class dpll :
 				#If other unwatched Literal is not false, change the watched literal 
 				for lit in clause :
 					found = False
-					if abs(lit) == abs(otherWatchedLiteral) or abs(lit) == abs(literalWhy) : 
+					if abs(lit) == abs(otherWatchedLiteral) or abs(lit) == abs(literalWhy) : #current lit is beeing watched
 						continue 
-
-					if Case2 : 
+					elif Case2 : 
 						break
 
 					for (name, value, fixed) in self.trail : 
-						if name == abs(lit) :
+						if name == abs(lit) : #found assigned lit in clause
 							#print("Case 2 with " + str(lit))
-
-							Case2 = True
 							found = True
-							if (value == 1 and lit > 0) or (value == 0 and lit < 0) : 
+							if (value == 1 and lit > 0) or (value == 0 and lit < 0) : #clause is satisfied
 								#found true unwatched literal -> update the watchlist
+								Case2 = True
 								self.removeFromWatchlist(literalWhy, clauseNumber)
 								self.removeClauseWatching(literalWhy, clauseNumber)
 								self.appendToWatchlist(lit, clauseNumber)
@@ -226,15 +226,14 @@ class dpll :
 	
 					if not found : 
 						#current lit is not assigned -> make it the new watched literal 
-						
 						Case2 =  True 
 						found = True
 						self.removeFromWatchlist(literalWhy, clauseNumber)
 						self.removeClauseWatching(literalWhy, clauseNumber)
 						self.appendToWatchlist(lit, clauseNumber)
 						self.appendClauseWatching(lit, clauseNumber)
-						print("Current lit : " + str(lit) + " is not assigned")
-						print("Clause is now watching : " + str(self.clauseWatching[clauseNumber]))
+						#print("Current lit : " + str(lit) + " is not assigned")
+						#print("Clause is now watching : " + str(self.clauseWatching[clauseNumber]))
 						break
 						
 			if not (Case1 or Case2) : 
@@ -244,19 +243,19 @@ class dpll :
 				for (name, value, fixed) in self.trail :	
 					if name == abs(otherWatchedLiteral) : 
 						#Is set Found Confict
-						print("Conflict because of " +str(otherWatchedLiteral))
+						#print("Conflict because of " +str(otherWatchedLiteral))
 						self.timeBCP += time() - start
 						self.clausesToCheck = []
 						return False 
 				#Not set so Propagate
-				print("Propagate : " + str(otherWatchedLiteral))		
+				#print("Propagate : " + str(otherWatchedLiteral))		
 				if otherWatchedLiteral > 0: 
 					#Positive occurence in clause 
 					self.trail.append((otherWatchedLiteral, 1, True))
 					self.clausesToCheck += [(cur, -otherWatchedLiteral) for cur in self.watchlist[-otherWatchedLiteral]]
 				else : 
-					self.trail.append((otherWatchedLiteral, 0, True))
-					self.clausesToCheck += [(cur, otherWatchedLiteral) for cur in self.watchlist[otherWatchedLiteral]]
+					self.trail.append((abs(otherWatchedLiteral), 0, True))
+					self.clausesToCheck += [(cur, abs(otherWatchedLiteral)) for cur in self.watchlist[abs(otherWatchedLiteral)]]
 		self.timeBCP += time() - start
 		return True
 
@@ -322,7 +321,7 @@ class dpll :
 					else : #more negative occurences
 						self.trail.append((name, 0, False))
 					
-					print("Decided : " + str(self.trail[-1]))
+					#print("Decided : " + str(self.trail[-1]))
 					self.timeDecide += time() - start
 					return True
 		self.timeDecide += time() - start
